@@ -1,0 +1,51 @@
+@Library("jenlib") _
+
+final String PROJECT_NAME = "brainscales1-demos"
+
+boolean deploy = env.GERRIT_EVENT_TYPE == "change-merged"
+
+try {
+	withCcache() {
+		wafDefaultPipeline(
+			projects           : ["${PROJECT_NAME}"],
+			container          : [
+				app: "dls",
+			],
+			notificationChannel: "#jenkins-trashbin",  // success is checked globally
+			ignoreGerritChanges: deploy,
+			wafTargetOptions: ["--target=doc-brainscales1-demos-jupyter,doc-brainscales1-demos-html", "--target=patch_kernel"]
+		)
+	}
+
+	stage("Archive Results") {
+		runOnSlave(label: "frontend") {
+			archiveArtifacts("build/${PROJECT_NAME}/**/*")
+			publishHTML([allowMissing: false,
+			             reportDir   : "build/${PROJECT_NAME}/html/html",
+			             reportFiles : "index.html",
+			             reportName  : "HTML Output"])
+		}
+	}
+
+	conditionalStage(name: "Deployment to GitHub", skip: !deploy) {
+		runOnSlave(label: "frontend") {
+			dir("build/brainscales1-demos/jupyter/jupyter") {
+				jesh("git init")
+				jesh("git add *.ipynb _static")
+				jesh("git commit -m \"build ${currentBuild.displayName}\"")
+				jesh("git remote add origin git@github-brainscales1-demos_jupyter-notebooks:electronicvisions/brainscales1-demos.git")
+				lock("brainscales1-demos_GITHUB-UPLOAD") {
+					jesh("git push -f origin HEAD:jupyter-notebooks-experimental")
+				}
+			}
+		}
+	}
+} catch (Throwable t) {
+	notifyFailure(mattermostChannel: "#visionary-wafer-users")
+	throw t
+}
+
+if (currentBuild.currentResult != "SUCCESS") {
+	notifyFailure(mattermostChannel: "#visionary-wafer-users")
+}
+
