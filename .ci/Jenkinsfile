@@ -35,7 +35,7 @@ try {
 				jesh("git commit -m \"build ${currentBuild.displayName}\"")
 				jesh("git remote add origin git@github-brainscales1-demos_jupyter-notebooks:electronicvisions/brainscales1-demos.git")
 				lock("brainscales1-demos_GITHUB-UPLOAD") {
-					jesh("git push -f origin HEAD:jupyter-notebooks-experimental")
+					jesh("git push -f origin HEAD:jupyter-notebooks")
 				}
 			}
 		}
