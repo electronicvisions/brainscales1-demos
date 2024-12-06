@@ -2,21 +2,22 @@ Downscaled cortical mircrocircuit on BrainScales-1
 ==================================================
 
 In this notebook, a 10% version of the cortical microcircuit as described in Potjans and Diesmann (`2014 <https://doi.org/10.1093/cercor/bhs358>`_) is emulated on the BrainScaleS-1 system in Heidelberg.
-Simultaneously, the same network is simulated on the Jülich HPC cluster using the software simulator Nest [`Gewaltig and Diesmann (2007) <https://doi.org/10.4249/scholarpedia.1430>`_].
+Simultaneously, the same network is simulated on the Jülich HPC cluster using the software simulator NEST [`Gewaltig and Diesmann (2007) <https://doi.org/10.4249/scholarpedia.1430>`_].
 
 .. raw:: html
 
     <div class="floating-box">
     <center>
-    <img src="_static/cortical_microcircuit/column_structure.png" title="Network structure of the cortical microcircuit model." style="width:20%; margin-right: 10em">
-    <img src="_static/wmod.png" title="BrainScaleS-1 wafer module." style="width:20%">
+    <img src="_static/cortical_microcircuit/column_structure.png" title="Network structure of the cortical microcircuit model." style="width:15%; margin-right: 10em">
+    <img src="_static/wmod.png" title="BrainScaleS-1 wafer module." style="width:15%">
     </center>
     </div>
 
-The cortical microcircuit model consists of four excitatory and four inhibitory populations of LIF neurons. The connectivity between these populations follows a predefined map, as described in the original publication. Each population receives a fixed number of excitatory external inputs, modeled as Poisson-distributed stimuli with a spike rate of 8 Hz.
+The cortical microcircuit model consists of four excitatory and four inhibitory populations of LIF neurons. The connectivity between these populations follows a predefined map, as described in the original publication. Each population receives a fixed number of excitatory external inputs, modeled as Poisson-distributed stimuli with a spike rate of 8 Hz. In total, the network comprises approximately 80,000 neurons and 300 million synapses. Its large scale and biologically plausible recurrent connectivity make it a widely used benchmark in computational neuroscience. Implementing this model on the BrainScaleS-1 hardware demonstrates the hardware's capabilities and how it can complement conventional software simulations.
 
-The network model has been adapted to accommodate the constrains imposed by the BrainScaleS-1 hardware.  Detailed information regarding these adaptations is provided by Schmidt (`2024 <https://doi.org/10.11588/heidok.00034446>`_).
+BrainScaleS-1 is an analog wafer-scale neuromorphic system featuring over 200,000 analog circuits that emulate AdEx neuron model behavior and more than 43 million synapses for connectivity. Its analog nature enables emulation speeds 10,000 times faster than biological real-time. However, the physical modeling approach using analog circuits imposes limitations on model parametrization and size. To address these limitations, the cortical microcircuit model must be adapted before emulation to align with the constraints of the BrainScaleS-1 hardware. This adaptation process can be incorporated into a co-execution approach, where network behavior is analyzed using both conventional HPC simulations and hardware emulation. Once a suitable model is developed, the system’s significant speedup offers a distinct advantage for iterative experiments or long-duration emulations.
 
+In this demo, a pre-adapted model is used, enabling execution on both the hardware and the software simulator. The adaptations involve uniformly reducing the neuron count and in-degree while preserving the original connectivity probability. To compensate for the reduced input resulting from this downscaling, synaptic weights are linearly increased. However, even with this adjustment, hardware constraints necessitate omitting some synaptic connections, leading to partial synapse loss, which is also integrated into the model. As a result, the adapted model includes 7,712 neurons and 2,373,933 internal synapses. Moreover, the external input is replaced with an external current implemented by an increased leak potential. Current-based synapses are converted to conductance-based synapses, with recalculated weights to preserve the post-synaptic potential amplitude measured from the expected mean membrane potential. Finally, synaptic time constants are increased, and normally distributed variations are introduced across all neuron parameters based on hardware calibration data. For more details on the required adaptations, refer to Schmidt (`2024 <https://doi.org/10.11588/heidok.00034446>`_).
 
 .. code-block:: ipython3
 
@@ -55,14 +56,14 @@ In general, the BrainScaleS-1 operating system can automatically generate new ne
 
 For the NEST simulation, a corresponding network description can be loaded, preserving the same network topology and synaptic delays as those expected on the BrainScaleS-1 system.
 
-A visualization of a BrainScaleS-1 wafer and the network topology mapped to the wafer is provided below. The wafer is divided into 384 rectangular chips, each containing 512 neuron circuits. The number of neurons used per chip is indicated by shades of blue, with darker shades representing more neurons. Colored lines represent synaptic connections between the chips.
+A visualization of a BrainScaleS-1 wafer and the network topology mapped to the wafer is provided below. The wafer is divided into 384 rectangular chips, each containing 512 neuron circuits. In the mapping overview, the number of neurons used per chip is indicated by shades of blue, with darker shades representing more neurons. Colored lines represent synaptic connections between the chips, while the regions corresponding to individual populations of the model are outlined with colored borders.
 
 .. raw:: html
 
     <div class="floating-box">
     <center>
-    <img src="_static/wafer.jpg" title="BrainScaleS-1 wafer." style="width:40%; margin-right: 10em">
-    <img src="_static/cortical_microcircuit/topology_cortical_microcircuit.png" title="Mapping result of the cortical microcircuit model." style="width:40%">
+    <img src="_static/wafer.jpg" title="BrainScaleS-1 wafer." style="width:30%; margin-right: 10em">
+    <img src="_static/cortical_microcircuit/topology_cortical_microcircuit.png" title="Mapping result of the cortical microcircuit model." style="width:30%">
     </center>
     </div>
 
@@ -263,7 +264,7 @@ A visualization of a BrainScaleS-1 wafer and the network topology mapped to the 
                                 'v_reset': (-np.inf, 0.9 * neuron_parameters['v_thresh'])}
 
         # delay calibration parameters. Extracted from delay measurments on wafer 30.
-        # Used during Nest simulations if routing results are loaded using internal_connector="load_routing_results"
+        # Used during NEST simulations if routing results are loaded using internal_connector="load_routing_results"
         delay_calib = (0.0397, 0.6444)
 
 In the next two cells, the experiment description is first sent to the BrainScaleS-1 system in Heidelberg for emulation and then to the HPC cluster in Jülich for the NEST simulation.
@@ -313,7 +314,7 @@ If you do not wish to run the simulation, you can simply skip this cell.
 
     nest_job = jureca_client.new_job(job.to_dict(), inputs = ["./_static/cortical_microcircuit/experiment_code/run.py", "./_static/cortical_microcircuit/implemented_routes.pickle"])
     state_nest = "running"
-    print("Nest job submitted")
+    print("NEST job submitted")
 
 The next cell polls the two sites and waits for the experiment results.
 
@@ -382,7 +383,7 @@ Moreover, the spike times of a subset of neurons is depicted for all populations
     """)
 
 If the setting "record_second_sample" is set to True, besides the already evaluated emulation, the network behavior is recorded a second time on the BrainScaleS-1 system after waiting for a fixed amount of time, configured by the parameter "wait_time".
-Due to the speedup factor of 10000 on BrainScaleS-1, waiting for 8.64s, the second measurement represents the network behavior of the downscales cortical microcircuit after more than 1 day of biological time.
+Due to the speedup factor of 10,000 on BrainScaleS-1, waiting for 8.64s, the second measurement represents the network behavior of the downscales cortical microcircuit after more than 1 day of biological time.
 The results of this second measurement can be visualized with the next cell.
 
 .. code-block:: ipython3
