@@ -327,6 +327,7 @@ The next cell polls the two sites and waits for the experiment results.
 
 Having received the results, the rate distribution as well as the irregularity distribution of the neurons of each population are evaluated and visualized in the next two cells.
 Moreover, the spike times of a subset of neurons is depicted for all populations.
+Although slight differences are observed between simulation and emulation due to additional hardware effects not accounted for in the simulated model, the overall activity remains similar in both cases.
 
 .. code-block:: ipython3
 
@@ -382,9 +383,10 @@ Moreover, the spike times of a subset of neurons is depicted for all populations
         </div>
     """)
 
-If the setting "record_second_sample" is set to True, besides the already evaluated emulation, the network behavior is recorded a second time on the BrainScaleS-1 system after waiting for a fixed amount of time, configured by the parameter "wait_time".
-Due to the speedup factor of 10,000 on BrainScaleS-1, waiting for 8.64s, the second measurement represents the network behavior of the downscales cortical microcircuit after more than 1 day of biological time.
-The results of this second measurement can be visualized with the next cell.
+If the setting "record_second_sample" is enabled, the network behavior is recorded a second time on the BrainScaleS-1 system after a fixed waiting period, specified by the parameter "wait_time".
+Due to the speedup factor of 10,000 on BrainScaleS-1, waiting for 8.64 seconds corresponds to observing the behavior of the downscaled cortical microcircuit after over one day of biological time.
+The results of this second measurement can be visualized in the next cell.
+Although the network behavior is expected and observed to remain stable, the hardware enables investigations over extended periods, such as one year of biological time. This can be achieved in less than one hour of wall-clock time, an achievement currently beyond the practical capabilities of conventional computing resources.
 
 .. code-block:: ipython3
 
